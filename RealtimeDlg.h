@@ -20,17 +20,22 @@ public:
 	virtual void DoDataExchange(CDataExchange* pDX);	// DDX/DDV support
 
 // My data
-	unsigned int KRXCodeToInd(unsigned int iKRXCode);
+	int KRXCodeToInd(unsigned int iKRXCode);				// returns -1 on error
 
 	CString m_sScrNo;
-	CString m_sLastDate;
+	CString m_sLastDate, m_sLastTime;
 
-	static const unsigned int m_ncMaxItems = 100;	// Max number of codes allowed in real-time API
+	static const unsigned int m_ncMaxItems = 100;			// Max number of codes allowed in real-time API
 	static const unsigned int m_ncKRXCodesBufSize = 1024;
 	static TCHAR m_sKRXCodes[m_ncKRXCodesBufSize];			// String of ;-separated KRX codes from config.ini
-	static unsigned int m_nKRXCodes;						// Number of codes
-	static unsigned int m_piKRXCodes[m_ncMaxItems];		// Array of codes, parsed
-	static std::ofstream m_pStreams[m_ncMaxItems * 2];			// Array of output file streams (trade & table)
+	static unsigned int m_nKRXCodes;						// Number of codes in "Data\config.ini"
+	static unsigned int m_piKRXCodes[m_ncMaxItems];			// Array of codes, parsed
+	static std::ofstream m_pStreams[m_ncMaxItems * 2];		// Array of output file streams (trade & table)
+
+	void DisplayUpdatedTime();
+
+	const UINT_PTR m_ncFlushTimerID = 1;
+	const UINT m_ncFlushWaitTimeMillisec = 3000;
 
 
 // Implementation
@@ -59,9 +64,9 @@ public:
 	CButton m_btCancel;
 };
 
-inline unsigned int CRealtimeDlg::KRXCodeToInd(unsigned int iKRXCode)
+inline int CRealtimeDlg::KRXCodeToInd(unsigned int iKRXCode)
 {
-	unsigned int ind = -1;
+	int ind = -1;
 
 	for (unsigned int i = 0; i < m_nKRXCodes; i++)
 	{

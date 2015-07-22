@@ -78,21 +78,15 @@ BOOL CRealtimeDlg::OnInitDialog()
 	}
 
 	// Read and display KRX codes
-	TCHAR sTemp[7];
 	const unsigned int bufSize = 1024;
+	TCHAR sDisp[bufSize], sTemp[7];
 	char pcDispBuf[bufSize], pcTemp[10];
-	TCHAR sDisp[bufSize];
-	CString sDirBase = theApp.m_sAppPath + "\\Data\\";
 
 	sprintf_s(pcDispBuf, "Data\\config.ini\n");
 	for (unsigned int i = 0; i < m_nKRXCodes; i++)
 	{
 		wcsncpy_s(sTemp, m_sKRXCodes + i * 7, 6);
 		m_piKRXCodes[i] = _wtoi(sTemp);
-
-		// Create folder for each item (if not present)
-		if (!::PathIsDirectory(sDirBase + sTemp))
-			::CreateDirectory(sDirBase + sTemp, NULL);
 
 		sprintf_s(pcTemp, "%06d   ", m_piKRXCodes[i]);
 		strcat_s(pcDispBuf, pcTemp);
@@ -102,12 +96,12 @@ BOOL CRealtimeDlg::OnInitDialog()
 
 	MultiByteToWideChar(CP_ACP, 0, pcDispBuf, bufSize, sDisp, bufSize);
 	((CWnd*)GetDlgItem(IDC_STATIC_DISP))->SetWindowText(sDisp);
+	DisplayUpdatedTime();
 
 	// Used for API communication
 	m_sScrNo = _T("9999");
 
-	// As this is different from the current date,
-	// initial call to event function will trigger ofstream assignments
+	// This will be properly initialized on the first 'Run'
 	m_sLastDate = _T("00000000");
 
 	return TRUE;  // return TRUE  unless you set the focus to a control
@@ -182,6 +176,7 @@ void CRealtimeDlg::OnEventConnect(long nErrCode)
 	else
 	{
 		((CWnd*)GetDlgItem(IDC_STATIC_DISP2))->SetWindowText(_T("Login successful."));
+		DisplayUpdatedTime();
 
 		m_btLogin.EnableWindow(FALSE);
 		m_btRun.EnableWindow(TRUE);
@@ -199,8 +194,8 @@ void CRealtimeDlg::OnBnClickedButtonRun()
 	TCHAR sDisp[bufSize];
 
 
-	// Set up real time monitor API
-	if ((ret = theApp.m_cKHOpenAPI.SetRealReg(m_sScrNo, m_sKRXCodes, _T("10;15;21;27;28;41;42;43;44;45;46;47;48;49;50;51;52;53;54;55;56;57;58;59;60;61;62;63;64;65;66;67;68;69;70;71;72;73;74;75;76;77;78;79;80"), _T("0"))) < 0)
+	// Set up real time monitor API (KRX codes & FIDs)
+	if ((ret = theApp.m_cKHOpenAPI.SetRealReg(m_sScrNo, m_sKRXCodes, _T("10;15;20;21;27;28;41;42;43;44;45;46;47;48;49;50;51;52;53;54;55;56;57;58;59;60;61;62;63;64;65;66;67;68;69;70;71;72;73;74;75;76;77;78;79;80"), _T("0"))) < 0)
 	{
 		swprintf_s(sDisp, bufSize, _T("KHOpenAPI.SetRealReg: Error #%d"), ret);
 		AfxMessageBox(sDisp);
@@ -212,6 +207,41 @@ void CRealtimeDlg::OnBnClickedButtonRun()
 		m_btCancel.EnableWindow(FALSE);
 
 		((CWnd*)GetDlgItem(IDC_STATIC_DISP2))->SetWindowText(_T("Started real-time data dump."));
+		DisplayUpdatedTime();
+
+		// Assign files to streams
+		CString sDir, sKRXCode, sFileName;
+		CTime t = CTime::GetCurrentTime();
+		sDir = t.Format("%Y%m%d");
+
+		if (sDir.Compare(m_sLastDate)) // Prevent opening files multiple times during the same day
+		{
+			m_sLastDate = sDir;
+
+			// Create folder for today
+			sDir = theApp.m_sAppPath + "\\Data\\" + m_sLastDate;
+			if (!::PathIsDirectory(sDir))
+				::CreateDirectory(sDir, NULL);
+
+			for (unsigned int i = 0; i < m_nKRXCodes; i++)
+			{
+				sKRXCode.Format(_T("%06d"), m_piKRXCodes[i]);
+
+				// Stream for trade updates
+				if (m_pStreams[i].is_open())
+					m_pStreams[i].close();
+
+				sFileName = sDir + CString("\\") + sKRXCode + CString(".txt");
+				m_pStreams[i].open(sFileName.GetBuffer(), std::ofstream::app);
+
+				// Stream for price table updates
+				if (m_pStreams[i + m_ncMaxItems].is_open())
+					m_pStreams[i + m_ncMaxItems].close();
+
+				sFileName = sDir + CString("\\") + sKRXCode + CString("t.txt");
+				m_pStreams[i + m_ncMaxItems].open(sFileName.GetBuffer(), std::ofstream::app);
+			}
+		}
 	}
 
 }
@@ -221,172 +251,90 @@ void CRealtimeDlg::OnReceiveRealData(LPCTSTR sRealKey, LPCTSTR sRealType, LPCTST
 {
 	// TODO: Add your message handler code here
 
-	const unsigned int bufSize = 1024;
-	char pcTemp[bufSize], pcWriteBuf[bufSize];
-	int iKRXCode, iC;
-
-	// (Re)assign files to streams -- on first run or if date changed
-	CTime t = CTime::GetCurrentTime();
-	CString sTemp = t.Format("%Y%m%d");
-	if (sTemp.Compare(m_sLastDate))
-	{
-		m_sLastDate = sTemp;
-
-		for (unsigned int i = 0; i < m_nKRXCodes; i++)
-		{
-			// Stream for trade updates
-			if (m_pStreams[i].is_open())
-				m_pStreams[i].close();
-
-			sTemp.Format(_T("%06d"), m_piKRXCodes[i]);
-			sTemp = theApp.m_sAppPath + CString("\\Data\\") + sTemp + CString("\\") + m_sLastDate + CString(".txt");
-			m_pStreams[i].open(sTemp.GetBuffer(), std::ofstream::app);
-
-			// Stream for price table updates
-			if (m_pStreams[i + m_ncMaxItems].is_open())
-				m_pStreams[i + m_ncMaxItems].close();
-
-			sTemp.Format(_T("%06d"), m_piKRXCodes[i]);
-			sTemp = theApp.m_sAppPath + CString("\\Data\\") + sTemp + CString("\\") + m_sLastDate + CString("t.txt");
-			m_pStreams[i + m_ncMaxItems].open(sTemp.GetBuffer(), std::ofstream::app);
-		}
-	}
-
+	const unsigned int bufSize = 512;
+	char pcWriteBuf[bufSize];
+	int iKRXCode, data[41], ind;
+	
+	int bRelevant = 0;
 
 	// sRealType
+	// addr   0 1 2 3
+	// 주식 0xC1D6BDC4
 	// addr   4 5 6 7
+	// 체결 0xC3BCB0E1 ("주식체결")
 	// 호가 0xC8A3B0A1 ("주식호가")
 	// 시간 0xBDC3B0A3 ("주식시간외호가")
-	// 체결 0xC3BCB0E1 ("주식체결")
 
 	// KRX code
 	iKRXCode = _ttoi(sRealKey);
-#ifdef DISP_VERBOSE
-	TCHAR sDisp[bufSize];
-	char pcDispBuf[bufSize];
-	sprintf_s(pcDispBuf, "Code\t\t%06d\n", iKRXCode);
-#endif
 
-	// Price table update
-	if (((sRealType[4] == 0xC8) && (sRealType[5] == 0xA3) && (sRealType[6] == 0xB0) && (sRealType[7] == 0xA1)) ||
-		((sRealType[4] == 0xBD) && (sRealType[5] == 0xC3) && (sRealType[6] == 0xB0) && (sRealType[7] == 0xA3)))
+	// sRealType[0:3] == "주식"
+	if (((ind = KRXCodeToInd(iKRXCode)) != -1) && (sRealType[0] == 0xC1) && (sRealType[1] == 0xD6) && (sRealType[2] == 0xBD) && (sRealType[3] == 0xC4))
 	{
-		// Time
-		iC = _ttoi(theApp.m_cKHOpenAPI.GetCommRealData(sRealKey, 21));
-#ifdef DISP_VERBOSE
-		sprintf_s(pcTemp, "Time\t\t%06d\n", iC);
-		strcat_s(pcDispBuf, pcTemp);
-#endif
-		sprintf_s(pcWriteBuf, "%06d\t", iC);
-
-		// Sell price 10 ~ 1 (high->low)
-		for (unsigned int i = 10; i >= 1; i--)
+		// sRealType[4:7] == "체결"
+		if ((sRealType[4] == 0xC3) && (sRealType[5] == 0xBC) && (sRealType[6] == 0xB0) && (sRealType[7] == 0xE1))
 		{
-			iC = abs(_ttoi(theApp.m_cKHOpenAPI.GetCommRealData(sRealKey, 40 + i)));
-#ifdef DISP_VERBOSE
-			sprintf_s(pcTemp, "Sell price %d\t%d\t", i, iC);
-			strcat_s(pcDispBuf, pcTemp);
-#endif
-			sprintf_s(pcTemp, "%d\t", iC);
-			strcat_s(pcWriteBuf, pcTemp);
+			// Time
+			data[0] = _ttoi(theApp.m_cKHOpenAPI.GetCommRealData(sRealKey, 20));
+			// Trade quantity
+			data[1] = abs(_ttoi(theApp.m_cKHOpenAPI.GetCommRealData(sRealKey, 15)));
+			// Trade price
+			data[2] = abs(_ttoi(theApp.m_cKHOpenAPI.GetCommRealData(sRealKey, 10)));
+			// Sell price 1
+			data[3] = abs(_ttoi(theApp.m_cKHOpenAPI.GetCommRealData(sRealKey, 27)));
+			// Buy price 1
+			data[4] = abs(_ttoi(theApp.m_cKHOpenAPI.GetCommRealData(sRealKey, 28)));
 
-			iC = abs(_ttoi(theApp.m_cKHOpenAPI.GetCommRealData(sRealKey, 60 + i)));
-#ifdef DISP_VERBOSE
-			sprintf_s(pcTemp, "%d\n", iC);
-			strcat_s(pcDispBuf, pcTemp);
-#endif
-			sprintf_s(pcTemp, "%d\t", iC);
-			strcat_s(pcWriteBuf, pcTemp);
+			sprintf_s(pcWriteBuf, "%06d\t%d\t%d\t%d\t%d\n", data[0], data[1], data[2], data[3], data[4]);
+
+			m_pStreams[ind].write(pcWriteBuf, strlen(pcWriteBuf));
+
+			bRelevant = 1;
 		}
 
-		// Buy price 1 ~ 10 (high->low)
-		for (unsigned int i = 1; i <= 10; i++)
+		// sRealType[4:7] == "호가"
+		else if ((sRealType[4] == 0xC8) && (sRealType[5] == 0xA3) && (sRealType[6] == 0xB0) && (sRealType[7] == 0xA1))
 		{
-			iC = abs(_ttoi(theApp.m_cKHOpenAPI.GetCommRealData(sRealKey, 50 + i)));
-#ifdef DISP_VERBOSE
-			sprintf_s(pcTemp, "Buy price %d\t%d\t", i, iC);
-			strcat_s(pcDispBuf, pcTemp);
-#endif
-			sprintf_s(pcTemp, "%d\t", iC);
-			strcat_s(pcWriteBuf, pcTemp);
+			// Time
+			data[0] = _ttoi(theApp.m_cKHOpenAPI.GetCommRealData(sRealKey, 21));
 
-			iC = abs(_ttoi(theApp.m_cKHOpenAPI.GetCommRealData(sRealKey, 70 + i)));
-#ifdef DISP_VERBOSE
-			sprintf_s(pcTemp, "%d\n", iC);
-			strcat_s(pcDispBuf, pcTemp);
-#endif
-			if (i != 10)
-				sprintf_s(pcTemp, "%d\t", iC);
-			else
-				sprintf_s(pcTemp, "%d\n", iC);
-			strcat_s(pcWriteBuf, pcTemp);
+			// Price table (price, quantity) (high->low)
+			for (unsigned int i = 0; i < 10; i++)
+			{
+				// Sell price 10 ~ 1 FID(50->41, 70->61)
+				data[1  + (i << 1)] = abs(_ttoi(theApp.m_cKHOpenAPI.GetCommRealData(sRealKey, 50 - i)));
+				data[2  + (i << 1)] = abs(_ttoi(theApp.m_cKHOpenAPI.GetCommRealData(sRealKey, 70 - i)));
+				
+				// Buy price 1 ~ 10 FID(51->60, 71->80)
+				data[21 + (i << 1)] = abs(_ttoi(theApp.m_cKHOpenAPI.GetCommRealData(sRealKey, 51 + i)));
+				data[22 + (i << 1)] = abs(_ttoi(theApp.m_cKHOpenAPI.GetCommRealData(sRealKey, 71 + i)));
+			}
+
+			sprintf_s(pcWriteBuf, "%06d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t"\
+										"%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t"\
+										"%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t"\
+										"%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\n",\
+				data[0], data[ 1], data[ 2], data[ 3], data[ 4], data[ 5], data[ 6], data[ 7], data[ 8], data[ 9], data[10],\
+						 data[11], data[12], data[13], data[14], data[15], data[16], data[17], data[18], data[19], data[20],\
+						 data[21], data[22], data[23], data[24], data[25], data[26], data[27], data[28], data[29], data[30],\
+						 data[31], data[32], data[33], data[34], data[35], data[36], data[37], data[38], data[39], data[40]);
+
+			m_pStreams[ind + m_ncMaxItems].write(pcWriteBuf, strlen(pcWriteBuf));
+
+			bRelevant = 1;
 		}
-
-#ifdef DISP_VERBOSE
-		MultiByteToWideChar(CP_ACP, 0, pcDispBuf, bufSize, sDisp, bufSize);
-		((CWnd*)GetDlgItem(IDC_STATIC_DISP))->SetWindowText(sDisp);
-#endif
-
-		m_pStreams[KRXCodeToInd(iKRXCode) + m_ncMaxItems].write(pcWriteBuf, strlen(pcWriteBuf));
-	}
-	// Trade update
-	else if ((sRealType[4] == 0xC3) && (sRealType[5] == 0xBC) && (sRealType[6] == 0xB0) && (sRealType[7] == 0xE1))
-	{
-		// Time
-		iC = _ttoi(theApp.m_cKHOpenAPI.GetCommRealData(sRealKey, 20));
-#ifdef DISP_VERBOSE
-		sprintf_s(pcTemp, "Time\t\t%06d\n", iC);
-		strcat_s(pcDispBuf, pcTemp);
-#endif
-		sprintf_s(pcWriteBuf, "%06d\t", iC);
-
-		// Quantity
-		iC = abs(_ttoi(theApp.m_cKHOpenAPI.GetCommRealData(sRealKey, 15)));
-#ifdef DISP_VERBOSE
-		sprintf_s(pcTemp, "Trade quant\t%d\n", iC);
-		strcat_s(pcDispBuf, pcTemp);
-#endif
-		sprintf_s(pcTemp, "%d\t", iC);
-		strcat_s(pcWriteBuf, pcTemp);
-
-		// Trade price
-		iC = abs(_ttoi(theApp.m_cKHOpenAPI.GetCommRealData(sRealKey, 10)));
-#ifdef DISP_VERBOSE
-		sprintf_s(pcTemp, "Trade price\t%d\n", iC);
-		strcat_s(pcDispBuf, pcTemp);
-#endif
-		sprintf_s(pcTemp, "%d\t", iC);
-		strcat_s(pcWriteBuf, pcTemp);
-
-		// (quantization step) == (sell price 1) - (buy price 1)
-		// Sell price 1
-		iC = abs(_ttoi(theApp.m_cKHOpenAPI.GetCommRealData(sRealKey, 27)));
-#ifdef DISP_VERBOSE
-		sprintf_s(pcTemp, "Sell price 1\t%d\n", iC);
-		strcat_s(pcDispBuf, pcTemp);
-#endif
-		sprintf_s(pcTemp, "%d\t", iC);
-		strcat_s(pcWriteBuf, pcTemp);
-
-		// Buy price 1
-		iC = abs(_ttoi(theApp.m_cKHOpenAPI.GetCommRealData(sRealKey, 28)));
-#ifdef DISP_VERBOSE
-		sprintf_s(pcTemp, "Buy price 1\t%d\n", iC);
-		strcat_s(pcDispBuf, pcTemp);
-#endif
-		sprintf_s(pcTemp, "%d\n", iC);
-		strcat_s(pcWriteBuf, pcTemp);
-
-#ifdef DISP_VERBOSE
-		MultiByteToWideChar(CP_ACP, 0, pcDispBuf, bufSize, sDisp, bufSize);
-		((CWnd*)GetDlgItem(IDC_STATIC_DISP2))->SetWindowText(sDisp);
-#endif
-
-		m_pStreams[KRXCodeToInd(iKRXCode)].write(pcWriteBuf, strlen(pcWriteBuf));
 	}
 	
-	// Timer for auto flush when events stop arriving for more than 3 seconds
-	SetTimer(1, 3000, TimerFlushCallback);
+	if (bRelevant)
+	{
+		// Display updated time every second while events are arriving
+		CTime t = CTime::GetCurrentTime();
+		if (m_sLastTime.Compare(t.Format("Updated: %Y.%m.%d %H:%M:%S")))
+			DisplayUpdatedTime();
+
+		// Timer for auto flush when events stop arriving for more than 3 seconds
+		SetTimer(m_ncFlushTimerID, m_ncFlushWaitTimeMillisec, TimerFlushCallback);
+	}
 }
 
 void CRealtimeDlg::OnBnClickedButtonStop()
@@ -398,9 +346,10 @@ void CRealtimeDlg::OnBnClickedButtonStop()
 	m_btStop.EnableWindow(FALSE);
 
 	((CWnd*)GetDlgItem(IDC_STATIC_DISP2))->SetWindowText(_T("Waiting for remaining events."));
+	DisplayUpdatedTime();
 
 	// Timer for auto flush when events stop arriving for more than 3 seconds
-	SetTimer(1, 3000, TimerFlushCallback);
+	SetTimer(m_ncFlushTimerID, m_ncFlushWaitTimeMillisec, TimerFlushCallback);
 }
 
 void CRealtimeDlg::OnBnClickedCancel()
@@ -434,8 +383,9 @@ VOID CALLBACK CRealtimeDlg::TimerFlushCallback(HWND hwnd, UINT uMsg, UINT_PTR id
 			m_pStreams[i].flush();
 
 	((CWnd*)(pCurInstance->GetDlgItem(IDC_STATIC_DISP2)))->SetWindowText(_T("Flushed ofstream."));
+	pCurInstance->DisplayUpdatedTime();
 
-	pCurInstance->KillTimer(1);
+	pCurInstance->KillTimer(pCurInstance->m_ncFlushTimerID);
 	
 	if (pCurInstance->m_btStop.IsWindowEnabled() == FALSE)
 	{
@@ -443,4 +393,12 @@ VOID CALLBACK CRealtimeDlg::TimerFlushCallback(HWND hwnd, UINT uMsg, UINT_PTR id
 		pCurInstance->m_btCancel.EnableWindow(TRUE);
 	}
 
+}
+
+void CRealtimeDlg::DisplayUpdatedTime()
+{
+	// Display time of last event
+	CTime t = CTime::GetCurrentTime();
+	m_sLastTime = t.Format("Updated: %Y.%m.%d %H:%M:%S");
+	((CWnd*)GetDlgItem(IDC_STATIC_DISP_TIME))->SetWindowText(m_sLastTime);
 }
