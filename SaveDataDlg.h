@@ -6,15 +6,15 @@
 #include "afxwin.h"
 
 
-// CRealtimeDlg dialog
-class CRealtimeDlg : public CDialogEx
+// CSaveDataDlg dialog
+class CSaveDataDlg : public CDialogEx
 {
 // Construction
 public:
-	CRealtimeDlg(CWnd* pParent = NULL);	// standard constructor
+	CSaveDataDlg(CWnd* pParent = NULL);	// standard constructor
 
 // Dialog Data
-	enum { IDD = IDD_REALTIME_DIALOG };
+	enum { IDD = IDD_SAVEDATA_DIALOG };
 
 	protected:
 	virtual void DoDataExchange(CDataExchange* pDX);	// DDX/DDV support
@@ -22,20 +22,22 @@ public:
 // My data
 	int KRXCodeToInd(unsigned int iKRXCode);				// returns -1 on error
 
-	CString m_sScrNo;
+	CString m_sDataPath;
+	CString m_sScrNo_0, m_sScrNo_1;
 	CString m_sLastDate, m_sLastTime;
 
-	static const unsigned int m_ncMaxItems = 100;			// Max number of codes allowed in real-time API
-	static const unsigned int m_ncKRXCodesBufSize = 1024;
-	static TCHAR m_sKRXCodes[m_ncKRXCodesBufSize];			// String of ;-separated KRX codes from config.ini
+	static const unsigned int m_ncMaxItems = 200;			// Max number of codes allowed in real-time API
+	static const unsigned int m_ncKRXCodesBufSize = 4096;
+	static TCHAR m_sKRXCodes_0[m_ncKRXCodesBufSize];			// String of ;-separated KRX codes from config.ini
+	static TCHAR m_sKRXCodes_1[m_ncKRXCodesBufSize];			// String of ;-separated KRX codes from config.ini
 	static unsigned int m_nKRXCodes;						// Number of codes in "Data\config.ini"
 	static unsigned int m_piKRXCodes[m_ncMaxItems];			// Array of codes, parsed
 	static std::ofstream m_pStreams[m_ncMaxItems * 2];		// Array of output file streams (trade & table)
 
 	void DisplayUpdatedTime();
 
-	const UINT_PTR m_ncFlushTimerID = 1;
-	const UINT m_ncFlushWaitTimeMillisec = 3000;
+	static const UINT_PTR m_ncFlushTimerID = 1;
+	static const UINT m_ncFlushWaitTimeMillisec = 3000;
 
 
 // Implementation
@@ -60,11 +62,11 @@ public:
 	afx_msg void OnBnClickedCancel();
 
 	static VOID CALLBACK TimerFlushCallback(HWND hwnd, UINT uMsg, UINT_PTR idEvent, DWORD dwTime);
-	static CRealtimeDlg *pCurInstance;
+	static CSaveDataDlg *pCurInstance;
 	CButton m_btCancel;
 };
 
-inline int CRealtimeDlg::KRXCodeToInd(unsigned int iKRXCode)
+inline int CSaveDataDlg::KRXCodeToInd(unsigned int iKRXCode)
 {
 	int ind = -1;
 

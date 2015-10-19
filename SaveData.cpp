@@ -3,24 +3,24 @@
 //
 
 #include "stdafx.h"
-#include "Realtime.h"
-#include "RealtimeDlg.h"
+#include "SaveData.h"
+#include "SaveDataDlg.h"
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
 #endif
 
 
-// CRealtimeApp
+// CSaveDataApp
 
-BEGIN_MESSAGE_MAP(CRealtimeApp, CWinApp)
+BEGIN_MESSAGE_MAP(CSaveDataApp, CWinApp)
 	ON_COMMAND(ID_HELP, &CWinApp::OnHelp)
 END_MESSAGE_MAP()
 
 
-// CRealtimeApp construction
+// CSaveDataApp construction
 
-CRealtimeApp::CRealtimeApp()
+CSaveDataApp::CSaveDataApp()
 {
 	// support Restart Manager
 	m_dwRestartManagerSupportFlags = AFX_RESTART_MANAGER_SUPPORT_RESTART;
@@ -30,14 +30,14 @@ CRealtimeApp::CRealtimeApp()
 }
 
 
-// The one and only CRealtimeApp object
+// The one and only CSaveDataApp object
 
-CRealtimeApp theApp;
+CSaveDataApp theApp;
 
 
-// CRealtimeApp initialization
+// CSaveDataApp initialization
 
-BOOL CRealtimeApp::InitInstance()
+BOOL CSaveDataApp::InitInstance()
 {
 	// InitCommonControlsEx() is required on Windows XP if an application
 	// manifest specifies use of ComCtl32.dll version 6 or later to enable
@@ -74,7 +74,7 @@ BOOL CRealtimeApp::InitInstance()
 	// Save app's path
 	TCHAR szPath[MAX_PATH];
 	GetModuleFileName(AfxGetInstanceHandle(), szPath, MAX_PATH);
-	*wcsrchr(szPath, '\\') = '\0';
+	*strrchr(szPath, '\\') = '\0';
 	m_sAppPath = szPath;
 
 	CString strFileName = m_sAppPath + "\\Data";
@@ -83,7 +83,7 @@ BOOL CRealtimeApp::InitInstance()
 
 
 
-	CRealtimeDlg dlg;
+	CSaveDataDlg dlg;
 	m_pMainWnd = &dlg;
 	INT_PTR nResponse = dlg.DoModal();
 	if (nResponse == IDOK)

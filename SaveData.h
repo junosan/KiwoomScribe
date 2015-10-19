@@ -14,14 +14,14 @@
 #include <fstream>
 
 
-// CRealtimeApp:
+// CSaveDataApp:
 // See Realtime.cpp for the implementation of this class
 //
 
-class CRealtimeApp : public CWinApp
+class CSaveDataApp : public CWinApp
 {
 public:
-	CRealtimeApp();
+	CSaveDataApp();
 	CKHOpenAPI m_cKHOpenAPI;
 	CString m_sAppPath;
 
@@ -34,4 +34,4 @@ public:
 	DECLARE_MESSAGE_MAP()
 };
 
-extern CRealtimeApp theApp;
+extern CSaveDataApp theApp;

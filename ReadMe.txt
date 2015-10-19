@@ -25,11 +25,11 @@ Realtime.vcxproj.filters
 Realtime.h
     This is the main header file for the application.  It includes other
     project specific headers (including Resource.h) and declares the
-    CRealtimeApp application class.
+    CSaveDataApp application class.
 
 Realtime.cpp
     This is the main application source file that contains the application
-    class CRealtimeApp.
+    class CSaveDataApp.
 
 Realtime.rc
     This is a listing of all of the Microsoft Windows resources that the
@@ -52,7 +52,7 @@ res\Realtime.rc2
 The application wizard creates one dialog class:
 
 RealtimeDlg.h, RealtimeDlg.cpp - the dialog
-    These files contain your CRealtimeDlg class.  This class defines
+    These files contain your CSaveDataDlg class.  This class defines
     the behavior of your application's main dialog.  The dialog's template is
     in Realtime.rc, which can be edited in Microsoft Visual C++.
 
