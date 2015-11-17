@@ -301,13 +301,13 @@ void CSaveDataDlg::OnReceiveRealData(LPCTSTR sRealKey, LPCTSTR _sRealType, LPCTS
 			// Time
 			data[0] = _ttoi(theApp.m_cKHOpenAPI.GetCommRealData(sRealKey, 20));
 			// Trade quantity
-			data[1] = abs(_ttoi(theApp.m_cKHOpenAPI.GetCommRealData(sRealKey, 15)));
+			data[1] = _ttoi(theApp.m_cKHOpenAPI.GetCommRealData(sRealKey, 15));
 			// Trade price
-			data[2] = abs(_ttoi(theApp.m_cKHOpenAPI.GetCommRealData(sRealKey, 10)));
+			data[2] = _ttoi(theApp.m_cKHOpenAPI.GetCommRealData(sRealKey, 10));
 			// Sell price 1
-			data[3] = abs(_ttoi(theApp.m_cKHOpenAPI.GetCommRealData(sRealKey, 27)));
+			data[3] = _ttoi(theApp.m_cKHOpenAPI.GetCommRealData(sRealKey, 27));
 			// Buy price 1
-			data[4] = abs(_ttoi(theApp.m_cKHOpenAPI.GetCommRealData(sRealKey, 28)));
+			data[4] = _ttoi(theApp.m_cKHOpenAPI.GetCommRealData(sRealKey, 28));
 
 			sprintf_s(pcWriteBuf, "%06d\t%d\t%d\t%d\t%d\n", data[0], data[1], data[2], data[3], data[4]);
 
@@ -325,12 +325,12 @@ void CSaveDataDlg::OnReceiveRealData(LPCTSTR sRealKey, LPCTSTR _sRealType, LPCTS
 			for (unsigned int i = 0; i < 10; i++)
 			{
 				// Sell price 10 ~ 1 FID(50->41, 70->61)
-				data[1  + (i << 1)] = abs(_ttoi(theApp.m_cKHOpenAPI.GetCommRealData(sRealKey, 50 - i)));
-				data[2  + (i << 1)] = abs(_ttoi(theApp.m_cKHOpenAPI.GetCommRealData(sRealKey, 70 - i)));
+				data[1  + (i << 1)] = _ttoi(theApp.m_cKHOpenAPI.GetCommRealData(sRealKey, 50 - i));
+				data[2  + (i << 1)] = _ttoi(theApp.m_cKHOpenAPI.GetCommRealData(sRealKey, 70 - i));
 				
 				// Buy price 1 ~ 10 FID(51->60, 71->80)
-				data[21 + (i << 1)] = abs(_ttoi(theApp.m_cKHOpenAPI.GetCommRealData(sRealKey, 51 + i)));
-				data[22 + (i << 1)] = abs(_ttoi(theApp.m_cKHOpenAPI.GetCommRealData(sRealKey, 71 + i)));
+				data[21 + (i << 1)] = _ttoi(theApp.m_cKHOpenAPI.GetCommRealData(sRealKey, 51 + i));
+				data[22 + (i << 1)] = _ttoi(theApp.m_cKHOpenAPI.GetCommRealData(sRealKey, 71 + i));
 			}
 
 			sprintf_s(pcWriteBuf, "%06d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t" \
