@@ -25,6 +25,7 @@ CString			CSaveDataDlg::m_psCodes[m_ncMaxItems];
 std::ofstream	CSaveDataDlg::m_pofsTr[m_ncMaxItems];
 std::ofstream	CSaveDataDlg::m_pofsTb[m_ncMaxItems];
 std::ofstream	CSaveDataDlg::m_pofsTh[m_ncMaxItems];
+std::ofstream	CSaveDataDlg::m_ofsKospi;
 CSaveDataDlg *	CSaveDataDlg::pThis;
 
 
@@ -199,6 +200,7 @@ BOOL CSaveDataDlg::OnInitDialog()
 	m_sScrKRX_1 = _T("9998");
 	m_sScrELW_0 = _T("9997");
 	m_sScrELW_1 = _T("9996");
+	m_sScrKOSPI = _T("9990");
 
 	// This will be properly initialized on the first 'Run'
 	m_sLastDate = _T("00000000");
@@ -304,6 +306,12 @@ void CSaveDataDlg::OnBnClickedButtonRun()
 	if (bSuccess && ((ret = theApp.m_cKHOpenAPI.SetRealReg(m_sScrELW_1, m_pcELWCodes_1, _T("10;15;20;21;27;28;41;42;43;44;45;46;47;48;49;50;51;52;53;54;55;56;57;58;59;60;61;62;63;64;65;66;67;68;69;70;71;72;73;74;75;76;77;78;79;80;621;622;623;624;625;626;627;628;629;630;631;632;633;634;635;636;637;638;639;640;670;671;672;673;674;675;676;706"), _T("0"))) < 0))
 		bSuccess = false;
 
+	// Set up KOSPI200 monitor
+	theApp.m_cKHOpenAPI.SetInputValue(_T("시장구분"), _T("0"));
+	theApp.m_cKHOpenAPI.SetInputValue(_T("업종코드"), _T("201"));
+	if (bSuccess && ((ret = theApp.m_cKHOpenAPI.CommRqData(_T("Get_KOSPI200"), _T("OPT20001"), 0, m_sScrKOSPI)) < 0))
+		bSuccess = false;
+
 	if (bSuccess)
 	{
 		m_btRun.EnableWindow(FALSE);
@@ -381,6 +389,10 @@ void CSaveDataDlg::OnBnClickedButtonRun()
 				sFileName = sDir + _T("\\") + sCode + CString(_T("g.txt"));
 				m_pofsTh[i].open(sFileName.GetBuffer(), std::ofstream::app);
 			}
+
+			if (m_ofsKospi.is_open()) m_ofsKospi.close();
+			sFileName = sDir + _T("\\") + CString(_T("KOSPI200.txt"));
+			m_ofsKospi.open(sFileName.GetBuffer(), std::ofstream::app);
 		}
 	}
 	else
@@ -522,6 +534,21 @@ void CSaveDataDlg::OnReceiveRealData(LPCTSTR _sRealKey, LPCTSTR _sRealType, LPCT
 			bRelevant = true;
 		}
 	}
+	else if ((_T("201") == sRealKey) && (_T("업종지수") == sRealType))
+	{
+		// Time
+		data[0]   = _ttoi(theApp.m_cKHOpenAPI.GetCommRealData(sRealKey, 20));
+		// Current price
+		pdData[1] = _ttof(theApp.m_cKHOpenAPI.GetCommRealData(sRealKey, 10));
+		// Trade quant
+		data[2]   = _ttoi(theApp.m_cKHOpenAPI.GetCommRealData(sRealKey, 15));
+
+		sprintf_s(pcWriteBuf, "%06d\t%.2f\t%d\n", data[0], pdData[1], data[2]);
+
+		m_ofsKospi.write(pcWriteBuf, strlen(pcWriteBuf));
+
+		bRelevant = true;
+	}
 	
 	if (bRelevant)
 	{
@@ -546,6 +573,7 @@ void CSaveDataDlg::OnBnClickedButtonStop()
 	theApp.m_cKHOpenAPI.SetRealRemove(m_sScrKRX_1, _T("ALL"));
 	theApp.m_cKHOpenAPI.SetRealRemove(m_sScrELW_0, _T("ALL"));
 	theApp.m_cKHOpenAPI.SetRealRemove(m_sScrELW_1, _T("ALL"));
+	theApp.m_cKHOpenAPI.SetRealRemove(m_sScrKOSPI, _T("ALL"));
 
 	m_btStop.EnableWindow(FALSE);
 
@@ -575,6 +603,7 @@ void CSaveDataDlg::OnBnClickedCancel()
 		if (m_pofsTb[i].is_open()) m_pofsTb[i].close();
 		if (m_pofsTh[i].is_open()) m_pofsTh[i].close();
 	}
+	if (m_ofsKospi.is_open()) m_ofsKospi.close();
 
 	// This very often causes infinite loop in the background after app closes
 	// theApp.m_cKHOpenAPI.CommTerminate();
@@ -593,6 +622,7 @@ VOID CALLBACK CSaveDataDlg::TimerFlushCallback(HWND hwnd, UINT uMsg, UINT_PTR id
 		if (m_pofsTb[i].is_open()) m_pofsTb[i].flush();
 		if (m_pofsTh[i].is_open()) m_pofsTh[i].flush();
 	}
+	if (m_ofsKospi.is_open()) m_ofsKospi.flush();
 
 	((CWnd*)(pThis->GetDlgItem(IDC_STATIC_DISP2)))->SetWindowText(_T("Flushed ofstreams"));
 	pThis->DisplayUpdatedTime();

@@ -34,6 +34,7 @@ public:
 	CString m_sScrKRX_1;
 	CString m_sScrELW_0;
 	CString m_sScrELW_1;
+	CString m_sScrKOSPI;
 
 	static const	int m_ncMaxItems = 400;			
 	static const	int m_ncCodeBufSize = (1 << 16);
@@ -48,6 +49,7 @@ public:
 	static			std::ofstream m_pofsTr[m_ncMaxItems];
 	static			std::ofstream m_pofsTb[m_ncMaxItems];
 	static			std::ofstream m_pofsTh[m_ncMaxItems];
+	static			std::ofstream m_ofsKospi;
 
 	static const	UINT_PTR m_ncFlushTimerID = 1;
 	static const	UINT m_ncFlushWaitTimeMillisec = 3000;
