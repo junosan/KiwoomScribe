@@ -19,7 +19,7 @@ TCHAR			CSaveDataDlg::m_pcProfileBuf[m_ncCodeBufSize];
 TCHAR			CSaveDataDlg::m_pcKRXCodes_0[m_ncCodeBufSize];
 TCHAR			CSaveDataDlg::m_pcKRXCodes_1[m_ncCodeBufSize];
 TCHAR			CSaveDataDlg::m_pcELWCodes_0[m_ncCodeBufSize];
-TCHAR			CSaveDataDlg::m_pcELWCodes_1[m_ncCodeBufSize];
+TCHAR			CSaveDataDlg::m_pcETFCodes_0[m_ncCodeBufSize];
 int				CSaveDataDlg::m_nCodes;
 CString			CSaveDataDlg::m_psCodes[m_ncMaxItems];
 std::ofstream	CSaveDataDlg::m_pofsTr[m_ncMaxItems];
@@ -85,7 +85,7 @@ BOOL CSaveDataDlg::OnInitDialog()
 	m_pcKRXCodes_0[0] = _T('\0');
 	m_pcKRXCodes_1[0] = _T('\0');
 	m_pcELWCodes_0[0] = _T('\0');
-	m_pcELWCodes_1[0] = _T('\0');
+	m_pcETFCodes_0[0] = _T('\0');
 
 	TCHAR sTemp[m_ncCodeBufSize];
 
@@ -160,28 +160,52 @@ BOOL CSaveDataDlg::OnInitDialog()
 			{
 				strcat_s(m_pcELWCodes_0, sItem.Mid(0, 6));
 				strcat_s(m_pcELWCodes_0, _T(";"));
+				m_psCodes[m_nCodes++] = sItem;
+				nELWCodes++;
+				strcat_s (sTemp, sItem.Mid(0, 6));
+				strcat_s (sTemp, _T(" "));
+				if ((m_nCodes % 10) == 0)
+					strcat_s(sTemp, "\n");
 			}
-			else
-			{
-				strcat_s(m_pcELWCodes_1, sItem.Mid(0, 6));
-				strcat_s(m_pcELWCodes_1, _T(";"));
-			}
-			m_psCodes[m_nCodes++] = sItem;
-			nELWCodes++;
-			strcat_s (sTemp, sItem.Mid(0, 6));
-			strcat_s (sTemp, _T(" "));
-			if ((m_nCodes % 10) == 0)
-				strcat_s(sTemp, "\n");
 		}
 	}
 
 	l = strlen(m_pcELWCodes_0);
 	if ((l > 0) && (m_pcELWCodes_0[l - 1] == _T(';'))) m_pcELWCodes_0[l - 1] = _T('\0');
-	l = strlen(m_pcELWCodes_1);
-	if ((l > 0) && (m_pcELWCodes_1[l - 1] == _T(';'))) m_pcELWCodes_1[l - 1] = _T('\0');
+
+	// Store first idx of ETF for later use
+	m_idxFirstETF = m_nCodes;
+
+	::GetPrivateProfileString(_T("SAVEDATA"), _T("ETF_CODE"), _T("122630"), m_pcProfileBuf, m_ncCodeBufSize, theApp.m_sAppPath + _T("\\SaveData\\config.ini"));
+	i = 0;
+	int nETFCodes = 0;
+	while (AfxExtractSubString(sCode, m_pcProfileBuf, i++, _T(';')))
+	{
+		int iC;
+		for (iC = 0; iC < m_nCodes; iC++)
+			if (sCode == m_psCodes[iC])
+				break;
+		if (iC == m_nCodes) // Avoid duplicate
+		{
+			if (nETFCodes < 100)
+			{
+				strcat_s(m_pcETFCodes_0, sCode);
+				strcat_s(m_pcETFCodes_0, _T(";"));
+				m_psCodes[m_nCodes++] = sCode;
+				nETFCodes++;
+				strcat_s (sTemp, sCode);
+				strcat_s (sTemp, _T(" "));
+				if ((m_nCodes % 10) == 0)
+					strcat_s(sTemp, "\n");
+			}
+		}
+	}
+
+	l = strlen(m_pcETFCodes_0);
+	if ((l > 0) && (m_pcETFCodes_0[l - 1] == _T(';'))) m_pcETFCodes_0[l - 1] = _T('\0');
 
 	((CWnd*)GetDlgItem(IDC_STATIC_DISP))->SetWindowText(sTemp);
-	sItem.Format(_T("%3d KRX + %3d ELW codes\n"), m_nCodes - nELWCodes, nELWCodes);
+	sItem.Format(_T("%3d KRX + %3d ELW + %3d ETF codes\n"), m_nCodes - nELWCodes - nETFCodes, nELWCodes, nETFCodes);
 	((CWnd*)GetDlgItem(IDC_STATIC_DISP2))->SetWindowText(sItem);
 	DisplayUpdatedTime();
 
@@ -199,7 +223,7 @@ BOOL CSaveDataDlg::OnInitDialog()
 	m_sScrKRX_0 = _T("9999");
 	m_sScrKRX_1 = _T("9998");
 	m_sScrELW_0 = _T("9997");
-	m_sScrELW_1 = _T("9996");
+	m_sScrETF_0 = _T("9996");
 	m_sScrKOSPI = _T("9990");
 
 	// This will be properly initialized on the first 'Run'
@@ -303,7 +327,7 @@ void CSaveDataDlg::OnBnClickedButtonRun()
 	if (bSuccess && ((ret = theApp.m_cKHOpenAPI.SetRealReg(m_sScrELW_0, m_pcELWCodes_0, _T("10;15;20;21;27;28;41;42;43;44;45;46;47;48;49;50;51;52;53;54;55;56;57;58;59;60;61;62;63;64;65;66;67;68;69;70;71;72;73;74;75;76;77;78;79;80;621;622;623;624;625;626;627;628;629;630;631;632;633;634;635;636;637;638;639;640;670;671;672;673;674;675;676;706"), _T("0"))) < 0))
 		bSuccess = false;
 
-	if (bSuccess && ((ret = theApp.m_cKHOpenAPI.SetRealReg(m_sScrELW_1, m_pcELWCodes_1, _T("10;15;20;21;27;28;41;42;43;44;45;46;47;48;49;50;51;52;53;54;55;56;57;58;59;60;61;62;63;64;65;66;67;68;69;70;71;72;73;74;75;76;77;78;79;80;621;622;623;624;625;626;627;628;629;630;631;632;633;634;635;636;637;638;639;640;670;671;672;673;674;675;676;706"), _T("0"))) < 0))
+	if (bSuccess && ((ret = theApp.m_cKHOpenAPI.SetRealReg(m_sScrETF_0, m_pcETFCodes_0, _T("10;15;20;21;27;28;41;42;43;44;45;46;47;48;49;50;51;52;53;54;55;56;57;58;59;60;61;62;63;64;65;66;67;68;69;70;71;72;73;74;75;76;77;78;79;80;36;39;265;266"), _T("0"))) < 0))
 		bSuccess = false;
 
 	// Set up KOSPI200 monitor
@@ -332,20 +356,27 @@ void CSaveDataDlg::OnBnClickedButtonRun()
 			m_sLastDate = sDir;
 
 			// Create folder for today
-			sDir = m_sDataPath + _T("\\") + m_sLastDate;
+			CString sDirGen = m_sDataPath + _T("\\") + m_sLastDate;
 			if (!::PathIsDirectory(m_sDataPath))
 				::CreateDirectory(m_sDataPath, NULL);
-			if (!::PathIsDirectory(sDir))
-				::CreateDirectory(sDir, NULL);
+			if (!::PathIsDirectory(sDirGen))
+				::CreateDirectory(sDirGen, NULL);
 
-			// Copy config.ini into sDir
-			sFileName = _T("copy ") + theApp.m_sAppPath + _T("\\SaveData\\config.ini") + _T(" ") + sDir;
+			CString sDirETF = sDirGen + _T("\\ETF");
+			if (!::PathIsDirectory(sDirETF))
+				::CreateDirectory(sDirETF, NULL);
+
+			// Copy config.ini into sDirGen
+			sFileName = _T("copy ") + theApp.m_sAppPath + _T("\\SaveData\\config.ini") + _T(" ") + sDirGen;
 			system(sFileName);
 
 			for (int i = 0; i < m_nCodes; i++)
 			{
 				CString sItem = m_psCodes[i]; // ###### (KRX) or ######_ELWNAME_#### (ELW) format
 				CString sCode = sItem.Mid(0, 6);
+
+				if (i < m_idxFirstETF) sDir = sDirGen;
+				else                   sDir = sDirETF;
 
 				if (sItem.GetLength() > 6) // ELW
 				{
@@ -380,18 +411,26 @@ void CSaveDataDlg::OnBnClickedButtonRun()
 				if (m_pofsTb[i].is_open()) m_pofsTb[i].close();
 				sFileName = sDir + _T("\\") + sCode + CString(_T("t.txt"));
 				m_pofsTb[i].open(sFileName.GetBuffer(), std::ofstream::app);
-
-				// no theoretical values for KRX
-				if (sItem.GetLength() <= 6) continue;
 				
-				// Stream for theoretical value updates
-				if (m_pofsTh[i].is_open()) m_pofsTh[i].close();
-				sFileName = sDir + _T("\\") + sCode + CString(_T("g.txt"));
-				m_pofsTh[i].open(sFileName.GetBuffer(), std::ofstream::app);
+				// Stream for theoretical value updates (ELW)
+				if (sItem.GetLength() > 6)
+				{
+					if (m_pofsTh[i].is_open()) m_pofsTh[i].close();
+					sFileName = sDir + _T("\\") + sCode + CString(_T("g.txt"));
+					m_pofsTh[i].open(sFileName.GetBuffer(), std::ofstream::app);
+				}
+
+				// Stream for NAV updates (ETF)
+				if (i >= m_idxFirstETF)
+				{
+					if (m_pofsTh[i].is_open()) m_pofsTh[i].close();
+					sFileName = sDir + _T("\\") + sCode + CString(_T("n.txt"));
+					m_pofsTh[i].open(sFileName.GetBuffer(), std::ofstream::app);
+				}
 			}
 
 			if (m_ofsKospi.is_open()) m_ofsKospi.close();
-			sFileName = sDir + _T("\\") + CString(_T("KOSPI200.txt"));
+			sFileName = sDirGen + _T("\\") + CString(_T("KOSPI200.txt"));
 			m_ofsKospi.open(sFileName.GetBuffer(), std::ofstream::app);
 		}
 	}
@@ -533,6 +572,23 @@ void CSaveDataDlg::OnReceiveRealData(LPCTSTR _sRealKey, LPCTSTR _sRealType, LPCT
 
 			bRelevant = true;
 		}
+
+		if ((_T("ETF NAV") == sRealType) && (ind >= m_idxFirstETF))
+		{ 
+			CString sTime  = theApp.m_cKHOpenAPI.GetCommRealData(sRealKey,  20).Trim(); // time
+			CString sCurPr = theApp.m_cKHOpenAPI.GetCommRealData(sRealKey,  10).Trim(); // current price
+			CString sNAV   = theApp.m_cKHOpenAPI.GetCommRealData(sRealKey,  36).Trim(); // NAV
+			CString sErr   = theApp.m_cKHOpenAPI.GetCommRealData(sRealKey,  39).Trim(); // track error
+			CString sIdxR  = theApp.m_cKHOpenAPI.GetCommRealData(sRealKey, 265).Trim(); // NAV/index deviation
+			CString sETFR  = theApp.m_cKHOpenAPI.GetCommRealData(sRealKey, 266).Trim(); // NAV/ETF deviation
+
+			sprintf_s(pcWriteBuf, "%s\t%s\t%s\t%s\t%s\t%s\n", \
+									sTime, sCurPr, sNAV, sErr, sIdxR, sETFR);
+
+			m_pofsTh[ind].write(pcWriteBuf, strlen(pcWriteBuf));
+
+			bRelevant = true;
+		}
 	}
 	else if ((_T("201") == sRealKey) && (_T("업종지수") == sRealType))
 	{
@@ -572,7 +628,7 @@ void CSaveDataDlg::OnBnClickedButtonStop()
 	theApp.m_cKHOpenAPI.SetRealRemove(m_sScrKRX_0, _T("ALL"));
 	theApp.m_cKHOpenAPI.SetRealRemove(m_sScrKRX_1, _T("ALL"));
 	theApp.m_cKHOpenAPI.SetRealRemove(m_sScrELW_0, _T("ALL"));
-	theApp.m_cKHOpenAPI.SetRealRemove(m_sScrELW_1, _T("ALL"));
+	theApp.m_cKHOpenAPI.SetRealRemove(m_sScrETF_0, _T("ALL"));
 	theApp.m_cKHOpenAPI.SetRealRemove(m_sScrKOSPI, _T("ALL"));
 
 	m_btStop.EnableWindow(FALSE);

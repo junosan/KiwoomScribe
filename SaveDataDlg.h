@@ -33,8 +33,10 @@ public:
 	CString m_sScrKRX_0;
 	CString m_sScrKRX_1;
 	CString m_sScrELW_0;
-	CString m_sScrELW_1;
+	CString m_sScrETF_0;
 	CString m_sScrKOSPI;
+
+	int m_idxFirstETF;
 
 	static const	int m_ncMaxItems = 400;			
 	static const	int m_ncCodeBufSize = (1 << 16);
@@ -42,7 +44,7 @@ public:
 	static			TCHAR m_pcKRXCodes_0[m_ncCodeBufSize];		// String of ;-separated KRX codes for SetRealReg (first 100)
 	static			TCHAR m_pcKRXCodes_1[m_ncCodeBufSize];		// String of ;-separated KRX codes for SetRealReg (later 100)
 	static			TCHAR m_pcELWCodes_0[m_ncCodeBufSize];		// String of ;-separated ELW codes for SetRealReg (first 100)
-	static			TCHAR m_pcELWCodes_1[m_ncCodeBufSize];		// String of ;-separated ELW codes for SetRealReg (later 100)
+	static			TCHAR m_pcETFCodes_0[m_ncCodeBufSize];		// String of ;-separated ETF codes for SetRealReg (first 100)
 
 	static			int m_nCodes;								// Number of codes in "Data\config.ini"
 	static			CString m_psCodes[m_ncMaxItems];			// KRX: CODE, ELW: CODE_NAME_EXPIRY (CODE: 6 char alphanumeric)
