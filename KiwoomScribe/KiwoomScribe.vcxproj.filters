@@ -15,9 +15,6 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <Text Include="ReadMe.txt" />
-  </ItemGroup>
-  <ItemGroup>
     <ClInclude Include="stdafx.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -30,10 +27,13 @@
     <ClInclude Include="KHOpenAPICtrl.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="SaveData.h">
+    <ClInclude Include="KiwoomScribeDlg.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="SaveDataDlg.h">
+    <ClInclude Include="KiwoomScribe.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="verify.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
@@ -44,25 +44,25 @@
     <ClCompile Include="KHOpenAPICtrl.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="SaveData.cpp">
+    <ClCompile Include="KiwoomScribe.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="SaveDataDlg.cpp">
+    <ClCompile Include="KiwoomScribeDlg.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <Image Include="res\SaveData.ico">
+    <Image Include="res\KiwoomScribe.ico">
       <Filter>Resource Files</Filter>
     </Image>
   </ItemGroup>
   <ItemGroup>
-    <ResourceCompile Include="SaveData.rc">
+    <ResourceCompile Include="KiwoomScribe.rc">
       <Filter>Resource Files</Filter>
     </ResourceCompile>
   </ItemGroup>
   <ItemGroup>
-    <None Include="res\SaveData.rc2">
+    <None Include="res\KiwoomScribe.rc2">
       <Filter>Resource Files</Filter>
     </None>
   </ItemGroup>

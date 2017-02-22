@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 11.00
 # Visual Studio 2010
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "SaveData", "SaveData.vcxproj", "{B64CAE9B-4AB1-4D8D-86F8-EB60DF1555A1}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "KiwoomScribe", "KiwoomScribe.vcxproj", "{B64CAE9B-4AB1-4D8D-86F8-EB60DF1555A1}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
